@@ -26,7 +26,7 @@ public class Startup
         services.AddCustomLogging(Log.Logger, _env);
 
         services.AddCustomOptions(Configuration);
-        
+
         services.AddCors();
 
         services.AddControllers();

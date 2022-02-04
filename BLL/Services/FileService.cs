@@ -6,8 +6,8 @@ namespace BLL.Services;
 
 public interface IFileService
 {
-    Task Save(string fileName, byte[] data, CancellationToken cancellationToken);
-    Task<byte[]> Read(string fileName, CancellationToken cancellationToken);
+    Task Save(string fileName, byte[] data, CancellationToken cancellationToken = new());
+    Task<byte[]> Read(string fileName, CancellationToken cancellationToken = new());
     void Delete(string fileName);
 }
 
@@ -32,7 +32,7 @@ public class FileService : IFileService
 
     #region Methods
 
-    public async Task Save(string fileName, byte[] data, CancellationToken cancellationToken)
+    public async Task Save(string fileName, byte[] data, CancellationToken cancellationToken = new())
     {
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);
@@ -42,7 +42,7 @@ public class FileService : IFileService
         fs.Close();
     }
 
-    public async Task<byte[]> Read(string fileName, CancellationToken cancellationToken)
+    public async Task<byte[]> Read(string fileName, CancellationToken cancellationToken = new())
     {
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);

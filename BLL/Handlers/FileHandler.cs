@@ -12,9 +12,9 @@ namespace BLL.Handlers;
 
 public interface IFileHandler
 {
-    Task<DTOResultBase> Create(FileCreate data, IFormFile file, CancellationToken cancellationToken);
-    Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken);
-    DTOResultBase Delete(FileDelete data, CancellationToken cancellationToken);
+    Task<DTOResultBase> Create(FileCreate data, IFormFile formFile, CancellationToken cancellationToken = new());
+    Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = new());
+    DTOResultBase Delete(FileDelete data);
 }
 
 public class FileHandler : HandlerBase, IFileHandler
@@ -42,7 +42,11 @@ public class FileHandler : HandlerBase, IFileHandler
 
     #region Methods
 
-    public async Task<DTOResultBase> Create(FileCreate data, IFormFile file, CancellationToken cancellationToken)
+    public async Task<DTOResultBase> Create(
+        FileCreate data,
+        IFormFile formFile,
+        CancellationToken cancellationToken = new()
+    )
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Create)));
 
@@ -51,10 +55,10 @@ public class FileHandler : HandlerBase, IFileHandler
 
         try
         {
-            var fileInfo = new FileInfo(file.FileName);
+            var fileInfo = new FileInfo(formFile.FileName);
             var fileName = Guid.NewGuid() + fileInfo.Extension;
             var ms = new MemoryStream();
-            await file.OpenReadStream().CopyToAsync(ms, cancellationToken);
+            await formFile.OpenReadStream().CopyToAsync(ms, cancellationToken);
             await _fileService.Save(fileName, ms.ToArray(), cancellationToken);
 
             _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Create)));
@@ -72,7 +76,7 @@ public class FileHandler : HandlerBase, IFileHandler
             {
                 Errors = new List<KeyValuePair<string, string>>
                 {
-                    new(Localize.ErrorType.File, Localize.Error.CreateFailed)
+                    new(Localize.ErrorType.File, Localize.Error.FileCreateFailed)
                 }
             };
 
@@ -83,7 +87,7 @@ public class FileHandler : HandlerBase, IFileHandler
         }
     }
 
-    public async Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken)
+    public async Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = new())
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Read)));
 
@@ -121,7 +125,7 @@ public class FileHandler : HandlerBase, IFileHandler
             {
                 Errors = new List<KeyValuePair<string, string>>
                 {
-                    new(Localize.ErrorType.File, Localize.Error.ReadFailed)
+                    new(Localize.ErrorType.File, Localize.Error.FileReadFailed)
                 }
             };
 
@@ -132,7 +136,7 @@ public class FileHandler : HandlerBase, IFileHandler
         }
     }
 
-    public DTOResultBase Delete(FileDelete data, CancellationToken cancellationToken)
+    public DTOResultBase Delete(FileDelete data)
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Delete)));
 
@@ -155,7 +159,7 @@ public class FileHandler : HandlerBase, IFileHandler
             {
                 Errors = new List<KeyValuePair<string, string>>
                 {
-                    new(Localize.ErrorType.File, Localize.Error.DeleteFailed)
+                    new(Localize.ErrorType.File, Localize.Error.FileDeleteFailed)
                 }
             };
 

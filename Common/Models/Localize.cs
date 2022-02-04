@@ -12,9 +12,13 @@ public static class Localize
 
     public static class Error
     {
-        public static string CreateFailed => "SignUpFailed";
-        public static string ReadFailed => "SignInFailed";
-        public static string DeleteFailed => "RefreshFailed";
+        #region File
+
+        public static string FileCreateFailed => "FileCreateFailed";
+        public static string FileReadFailed => "FileReadFailed";
+        public static string FileDeleteFailed => "FileDeleteFailed";
+
+        #endregion
     }
 
     public static class WarningType
