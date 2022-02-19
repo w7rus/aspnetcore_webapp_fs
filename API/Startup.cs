@@ -10,7 +10,14 @@ namespace ASP.NET_Core_Web_Application_File_Server;
 
 public class Startup
 {
+    #region Fields
+
     private readonly IWebHostEnvironment _env;
+    private IConfiguration Configuration { get; }
+
+    #endregion
+
+    #region Ctor
 
     public Startup(IConfiguration configuration, IWebHostEnvironment env)
     {
@@ -18,7 +25,9 @@ public class Startup
         Configuration = configuration;
     }
 
-    private IConfiguration Configuration { get; }
+    #endregion
+
+    #region Methods
 
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
@@ -98,4 +107,6 @@ public class Startup
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
+
+    #endregion
 }

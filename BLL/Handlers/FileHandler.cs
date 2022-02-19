@@ -12,8 +12,8 @@ namespace BLL.Handlers;
 
 public interface IFileHandler
 {
-    Task<DTOResultBase> Create(FileCreate data, IFormFile formFile, CancellationToken cancellationToken = new());
-    Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = new());
+    Task<DTOResultBase> Create(FileCreate data, IFormFile formFile, CancellationToken cancellationToken = default);
+    Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = default);
     DTOResultBase Delete(FileDelete data);
 }
 
@@ -45,7 +45,7 @@ public class FileHandler : HandlerBase, IFileHandler
     public async Task<DTOResultBase> Create(
         FileCreate data,
         IFormFile formFile,
-        CancellationToken cancellationToken = new()
+        CancellationToken cancellationToken = default
     )
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Create)));
@@ -87,7 +87,7 @@ public class FileHandler : HandlerBase, IFileHandler
         }
     }
 
-    public async Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = new())
+    public async Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = default)
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Read)));
 

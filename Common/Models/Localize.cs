@@ -6,29 +6,27 @@ public static class Localize
 {
     public static class ErrorType
     {
-        public static string ModelState => "ModelState";
-        public static string File => "File";
+        public const string ModelState = "ModelState";
+        public const string File = "File";
     }
 
     public static class Error
     {
         #region File
 
-        public static string FileCreateFailed => "FileCreateFailed";
-        public static string FileReadFailed => "FileReadFailed";
-        public static string FileDeleteFailed => "FileDeleteFailed";
+        public const string FileCreateFailed = "FileCreateFailed";
+        public const string FileReadFailed = "FileReadFailed";
+        public const string FileDeleteFailed = "FileDeleteFailed";
 
         #endregion
     }
 
     public static class WarningType
     {
-        public static string File => "File";
     }
 
     public static class Warning
     {
-        public static string XssVulnerable => "XSSVulnerable";
     }
 
     public static class Log
