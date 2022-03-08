@@ -3,6 +3,7 @@ using API.Controllers.Base;
 using BLL.Handlers;
 using BrunoZell.ModelBinding;
 using Common.Models;
+using Common.Models.Base;
 using DTO.Models.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,11 @@ public class FileController : CustomControllerBase
 
     #region Ctor
 
-    public FileController(ILogger<FileController> logger, IFileHandler fileHandler)
+    public FileController(
+        ILogger<FileController> logger,
+        IFileHandler fileHandler,
+        IHttpContextAccessor httpContextAccessor
+    ) : base(httpContextAccessor)
     {
         _logger = logger;
         _fileHandler = fileHandler;

@@ -6,4 +6,5 @@ public class DTOResultBase : IWarningModelResult, IErrorModelResult
 {
     public List<KeyValuePair<string, string>> Warnings { get; set; }
     public List<KeyValuePair<string, string>> Errors { get; set; }
+    public string TraceId { get; set; }
 }

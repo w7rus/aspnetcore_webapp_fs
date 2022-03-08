@@ -30,50 +30,82 @@ using Serilog;
 
 namespace API
 {
-    public class Program
+    public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateBootstrapLogger();
+
+            Log.Information("Application starting...");
+            
             var app = CreateHostBuilder(args).Build();
 
-            var config = app.Services.GetRequiredService<IConfiguration>();
+            var env = app.Services.GetRequiredService<IWebHostEnvironment>();
 
-            foreach (var c in config.AsEnumerable())
+            if (env.IsDevelopment())
             {
-                Console.WriteLine(c.Key + " = " + c.Value);
+                var config = app.Services.GetRequiredService<IConfiguration>();
+
+                foreach (var c in config.AsEnumerable())
+                {
+                    Console.WriteLine(c.Key + " = " + c.Value);
+                }
             }
 
-            app.Run();
+            try
+            {
+                await app.RunAsync();
+                Log.Information("Application stopping...");
+            }
+            catch (Exception e)
+            {
+                Log.Fatal(e, "An unhandled exception occured during bootstrapping!");
+            }
+            finally
+            {
+                Log.Information("Flushing logs...");
+                Log.CloseAndFlush();
+            }
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args)
+        private static IHostBuilder CreateHostBuilder(string[] args)
         {
-            var builder = Host.CreateDefaultBuilder(args);
-
-            builder.ConfigureAppConfiguration((hostingContext, config) =>
-            {
-                var env = hostingContext.HostingEnvironment;
-
-                config.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
-                config.AddJsonFile($"appsettings.Local.json", optional: true, reloadOnChange: true);
-
-                if (env.IsDevelopment())
+            return Host.CreateDefaultBuilder(args)
+                .UseSerilog((context, services, configuration) => configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console())
+                .ConfigureAppConfiguration((hostingContext, config) =>
                 {
-                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                    config.AddUserSecrets(appAssembly, true);
-                }
+                    Log.Information("Add JSON configurations...");
+                    config.AddJsonFile(
+                        Path.Combine(hostingContext.HostingEnvironment.ContentRootPath,
+                            $"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json"), optional: true,
+                        reloadOnChange: true);
+                    config.AddJsonFile(
+                        Path.Combine(hostingContext.HostingEnvironment.ContentRootPath, $"appsettings.Local.json"),
+                        optional: true, reloadOnChange: true);
 
-                config.AddEnvironmentVariables();
+                    if (hostingContext.HostingEnvironment.IsDevelopment())
+                    {
+                        Log.Information("Add user secrets...");
+                        var appAssembly =
+                            Assembly.Load(new AssemblyName(hostingContext.HostingEnvironment.ApplicationName));
+                        config.AddUserSecrets(appAssembly, true);
+                    }
 
-                if (args != null)
-                {
-                    config.AddCommandLine(args);
-                }
-            });
+                    Log.Information("Add environment variables...");
+                    config.AddEnvironmentVariables();
 
-            builder.ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>().UseSerilog(); });
-
-            return builder;
+                    if (args != null)
+                    {
+                        Log.Information("Add command line args...");
+                        config.AddCommandLine(args);
+                    }
+                })
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>().UseSerilog(); });
         }
     }
 }

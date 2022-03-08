@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Common.Models;
+using Common.Models.Base;
 
 namespace BLL.Handlers.Base;
 

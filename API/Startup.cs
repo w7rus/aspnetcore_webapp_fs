@@ -1,5 +1,6 @@
 ﻿using ASP.NET_Core_Web_Application_File_Server.Extensions;
 using Common.Models;
+using Common.Models.Base;
 using Common.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -32,7 +33,7 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddCustomLogging(Log.Logger, _env);
+        services.AddCustomLogging(_env, Configuration);
 
         services.AddCustomOptions(Configuration);
 
@@ -65,7 +66,8 @@ public class Startup
             {
                 var errorModelResult = new ErrorModelResult
                 {
-                    Errors = new List<KeyValuePair<string, string>>()
+                    Errors = new List<KeyValuePair<string, string>>(),
+                    TraceId = context.HttpContext.TraceIdentifier
                 };
 
                 foreach (var modelError in context.ModelState.Values.SelectMany(modelStateValue =>
@@ -84,11 +86,14 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IOptions<MiscOptions> miscOptions)
     {
-        Log.Logger.Debug("Configure!");
+        Log.Logger.Information("Startup.Configure()");
+        Log.Logger.Information($"EnvironmentName: {env.EnvironmentName}");
 
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
+            
+            Log.Logger.Information($"Add Swagger & SwaggerUI");
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
         }
@@ -97,6 +102,18 @@ public class Startup
             app.UseExceptionHandler("/Error");
             app.UseHsts();
         }
+        
+        app.UseSerilogRequestLogging(options =>
+        {
+            options.MessageTemplate =
+                "[{TraceId}] {RequestProtocol} {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+            options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+            {
+                diagnosticContext.Set("ConnectionId", httpContext.Connection.Id);
+                diagnosticContext.Set("TraceId", httpContext.TraceIdentifier);
+                diagnosticContext.Set("RequestProtocol", httpContext.Request.Protocol);
+            };
+        });
 
         app.UseRouting();
 

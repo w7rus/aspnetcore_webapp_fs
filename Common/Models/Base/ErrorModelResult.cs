@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using Common.Models.Base;
-
-namespace Common.Models;
+﻿namespace Common.Models.Base;
 
 public interface IErrorModelResult
 {

@@ -35,40 +35,29 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddCustomLogging(
         this IServiceCollection serviceCollection,
-        Serilog.ILogger logger,
-        IWebHostEnvironment env
+        IHostEnvironment env,
+        IConfiguration configuration
     )
     {
         var loggerConfiguration = new LoggerConfiguration()
-            .MinimumLevel.Verbose()
+            .MinimumLevel.Information()
+            .ReadFrom.Configuration(configuration)
             .Enrich.FromLogContext()
-            .WriteTo.Logger(_ =>
-            {
-                _.MinimumLevel.Error()
-                    .WriteTo.File(
-                        Path.Combine(Directory.GetCurrentDirectory(), "Logs",
-                            $"log_error_{DateTime.UtcNow:yyyy_mm_dd}.log"),
-                        LogEventLevel.Error, rollingInterval: RollingInterval.Day);
-            });
-
-
-        if (env.IsDevelopment())
-        {
-            loggerConfiguration
-                .WriteTo.Logger(_ =>
-                {
-                    _.MinimumLevel.Information()
-                        .WriteTo.Console()
-                        .WriteTo.File(
-                            Path.Combine(Directory.GetCurrentDirectory(), "Logs",
-                                $"log_debug_{DateTime.UtcNow:yyyy_mm_dd}.log"),
-                            rollingInterval: RollingInterval.Day);
-                });
-        }
+            .WriteTo.Console()
+            .WriteTo.File(
+                Path.Combine(env.ContentRootPath, "Logs", $"log_error_{DateTime.UtcNow:yyyy_mm_dd}.log"),
+                LogEventLevel.Error, rollingInterval: RollingInterval.Day, buffered: true,
+                flushToDiskInterval: TimeSpan.FromMinutes(1), rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 4194304)
+            .WriteTo.File(
+                Path.Combine(env.ContentRootPath, "Logs", $"log_information_{DateTime.UtcNow:yyyy_mm_dd}.log"),
+                LogEventLevel.Information, rollingInterval: RollingInterval.Day, buffered: true,
+                flushToDiskInterval: TimeSpan.FromMinutes(1), rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 4194304);
 
         Log.Logger = loggerConfiguration.CreateLogger();
 
-        serviceCollection.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
+        serviceCollection.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(Log.Logger, true));
 
         serviceCollection.AddSingleton(Log.Logger);
 
