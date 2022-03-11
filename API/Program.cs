@@ -105,7 +105,21 @@ namespace API
                         config.AddCommandLine(args);
                     }
                 })
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>().UseSerilog(); });
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>().UseSerilog(); })
+                .UseSerilog((context, services, configuration) => configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .ReadFrom.Services(services)
+                    .Enrich.FromLogContext()
+                    .Enrich.WithAssemblyName()
+                    .Enrich.WithEnvironmentName()
+                    .Enrich.WithMachineName()
+                    .Enrich.WithMemoryUsage()
+                    .Enrich.WithProcessId()
+                    .Enrich.WithProcessName()
+                    .Enrich.WithThreadId()
+                    .Enrich.WithThreadName()
+                    .WriteTo.Seq("http://localhost:5341")
+                    .WriteTo.Console());
         }
     }
 }

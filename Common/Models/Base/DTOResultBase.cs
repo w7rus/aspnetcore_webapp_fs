@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using Common.Enums;
 
 namespace Common.Models.Base;
 
 public class DTOResultBase : IWarningModelResult, IErrorModelResult
 {
-    public List<KeyValuePair<string, string>> Warnings { get; set; }
-    public List<KeyValuePair<string, string>> Errors { get; set; }
+    public List<WarningModelResultEntry> Warnings { get; set; }
+    public List<ErrorModelResultEntry> Errors { get; set; }
     public string TraceId { get; set; }
 }

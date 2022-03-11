@@ -4,12 +4,6 @@ namespace Common.Models;
 
 public static class Localize
 {
-    public static class ErrorType
-    {
-        public const string ModelState = "ModelState";
-        public const string File = "File";
-    }
-
     public static class Error
     {
         #region File
@@ -19,10 +13,12 @@ public static class Localize
         public const string FileDeleteFailed = "FileDeleteFailed";
 
         #endregion
-    }
+        
+        #region UnhandledException
 
-    public static class WarningType
-    {
+        public const string UnhandledExceptionContactSystemAdministrator = "UnhandledExceptionContactSystemAdministrator";
+
+        #endregion
     }
 
     public static class Warning
@@ -50,12 +46,18 @@ public static class Localize
 
         public static string MethodStart(string assemblyName, string methodName) =>
             $"[{assemblyName}.{methodName}] (Start)";
+        
+        public static string Method(string assemblyName, string methodName, string message) =>
+            $"[{assemblyName}.{methodName}] {message}";
 
         public static string MethodEnd(string assemblyName, string methodName) =>
             $"[{assemblyName}.{methodName}] (End)";
 
         public static string MethodError(string assemblyName, string methodName, string message) =>
             $"[{assemblyName}.{methodName}] (Error) {Environment.NewLine + message}";
+        
+        public static string UnhandledMethodError(string traceId, string message) =>
+            $"[{traceId}] (UnhandledError) {Environment.NewLine + message}";
 
         #endregion
 

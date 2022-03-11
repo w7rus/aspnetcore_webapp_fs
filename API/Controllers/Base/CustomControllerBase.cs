@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Common.Models.Base;
 using DTO.Models.File;
@@ -27,7 +28,7 @@ public class CustomControllerBase : ControllerBase
 
     internal IActionResult ResponseWith(DTOResultBase response)
     {
-        response.TraceId = _httpContext.TraceIdentifier;
+        response.TraceId = Activity.Current?.Id ?? _httpContext.TraceIdentifier;
         
         if (response.Errors != null && response.Errors.Any())
             return new BadRequestObjectResult(response);

@@ -53,38 +53,18 @@ public class FileHandler : HandlerBase, IFileHandler
         if (ValidateModel(data) is { } validationResult)
             return validationResult;
 
-        try
+        var fileInfo = new FileInfo(formFile.FileName);
+        var fileName = Guid.NewGuid() + fileInfo.Extension;
+        var ms = new MemoryStream();
+        await formFile.OpenReadStream().CopyToAsync(ms, cancellationToken);
+        await _fileService.Save(fileName, ms.ToArray(), cancellationToken);
+
+        _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Create)));
+
+        return new FileCreateResult
         {
-            var fileInfo = new FileInfo(formFile.FileName);
-            var fileName = Guid.NewGuid() + fileInfo.Extension;
-            var ms = new MemoryStream();
-            await formFile.OpenReadStream().CopyToAsync(ms, cancellationToken);
-            await _fileService.Save(fileName, ms.ToArray(), cancellationToken);
-
-            _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Create)));
-
-            return new FileCreateResult
-            {
-                FileName = fileName
-            };
-        }
-        catch (Exception e)
-        {
-            _logger.Log(LogLevel.Error, Localize.Log.MethodError(_fullName, nameof(Create), e.Message));
-
-            var errorModelResult = new ErrorModelResult
-            {
-                Errors = new List<KeyValuePair<string, string>>
-                {
-                    new(Localize.ErrorType.File, Localize.Error.FileCreateFailed)
-                }
-            };
-
-            if (e is CustomException)
-                errorModelResult.Errors.Add(new KeyValuePair<string, string>(Localize.ErrorType.File, e.Message));
-
-            return errorModelResult;
-        }
+            FileName = fileName
+        };
     }
 
     public async Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = default)
@@ -94,46 +74,26 @@ public class FileHandler : HandlerBase, IFileHandler
         if (ValidateModel(data) is { } validationResult)
             return validationResult;
 
-        try
+        var fileData = await _fileService.Read(data.FileName, cancellationToken);
+
+        var contentTypeProvider = new FileExtensionContentTypeProvider();
+        if (!contentTypeProvider.TryGetContentType(data.FileName, out var contentType))
+            contentType = "application/octet-stream";
+
+        var contentDisposition = new System.Net.Mime.ContentDisposition
         {
-            var fileData = await _fileService.Read(data.FileName, cancellationToken);
+            FileName = data.FileName,
+            Inline = true,
+        };
+        _httpContext.Response.Headers.Append("Content-Disposition", contentDisposition.ToString());
 
-            var contentTypeProvider = new FileExtensionContentTypeProvider();
-            if (!contentTypeProvider.TryGetContentType(data.FileName, out var contentType))
-                contentType = "application/octet-stream";
+        _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Read)));
 
-            var contentDisposition = new System.Net.Mime.ContentDisposition
-            {
-                FileName = data.FileName,
-                Inline = true,
-            };
-            _httpContext.Response.Headers.Append("Content-Disposition", contentDisposition.ToString());
-
-            _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Read)));
-
-            return new FileReadResult
-            {
-                Data = fileData,
-                ContentType = contentType
-            };
-        }
-        catch (Exception e)
+        return new FileReadResult
         {
-            _logger.Log(LogLevel.Error, Localize.Log.MethodError(_fullName, nameof(Read), e.Message));
-
-            var errorModelResult = new ErrorModelResult
-            {
-                Errors = new List<KeyValuePair<string, string>>
-                {
-                    new(Localize.ErrorType.File, Localize.Error.FileReadFailed)
-                }
-            };
-
-            if (e is CustomException)
-                errorModelResult.Errors.Add(new KeyValuePair<string, string>(Localize.ErrorType.File, e.Message));
-
-            return errorModelResult;
-        }
+            Data = fileData,
+            ContentType = contentType
+        };
     }
 
     public DTOResultBase Delete(FileDelete data)
@@ -143,31 +103,11 @@ public class FileHandler : HandlerBase, IFileHandler
         if (ValidateModel(data) is { } validationResult)
             return validationResult;
 
-        try
-        {
-            _fileService.Delete(data.FileName);
+        _fileService.Delete(data.FileName);
 
-            _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Delete)));
+        _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Delete)));
 
-            return new FileDeleteResult();
-        }
-        catch (Exception e)
-        {
-            _logger.Log(LogLevel.Error, Localize.Log.MethodError(_fullName, nameof(Delete), e.Message));
-
-            var errorModelResult = new ErrorModelResult
-            {
-                Errors = new List<KeyValuePair<string, string>>
-                {
-                    new(Localize.ErrorType.File, Localize.Error.FileDeleteFailed)
-                }
-            };
-
-            if (e is CustomException)
-                errorModelResult.Errors.Add(new KeyValuePair<string, string>(Localize.ErrorType.File, e.Message));
-
-            return errorModelResult;
-        }
+        return new FileDeleteResult();
     }
 
     #endregion
