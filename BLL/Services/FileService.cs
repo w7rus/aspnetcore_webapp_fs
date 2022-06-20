@@ -7,27 +7,8 @@ namespace BLL.Services;
 
 public interface IFileService
 {
-    /// <summary>
-    /// Saves file data with given filename
-    /// </summary>
-    /// <param name="fileName"></param>
-    /// <param name="data"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task Save(string fileName, byte[] data, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Gets file data with given filename
-    /// </summary>
-    /// <param name="fileName"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task<byte[]> Read(string fileName, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Deletes file with given filename
-    /// </summary>
-    /// <param name="fileName"></param>
+    Task Save(string fileName, Stream stream, CancellationToken cancellationToken = default);
+    FileStream Read(string fileName, CancellationToken cancellationToken = default);
     void Delete(string fileName);
 }
 
@@ -54,35 +35,29 @@ public class FileService : IFileService
 
     #region Methods
 
-    public async Task Save(string fileName, byte[] data, CancellationToken cancellationToken = default)
+    public async Task Save(string fileName, Stream stream, CancellationToken cancellationToken = default)
     {
-        _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Save)));
-
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);
         Directory.CreateDirectory(dirPath);
-        var fs = new FileStream(filePath, FileMode.CreateNew);
-        await fs.WriteAsync(data, cancellationToken);
-        fs.Close();
-
-        _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Save)));
+        var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        await stream.CopyToAsync(fileStream, cancellationToken);
+        await fileStream.FlushAsync(cancellationToken);
+        fileStream.Close();
     }
 
-    public async Task<byte[]> Read(string fileName, CancellationToken cancellationToken = default)
+    public FileStream Read(string fileName, CancellationToken cancellationToken)
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Read)));
 
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);
         Directory.CreateDirectory(dirPath);
-        var ms = new MemoryStream();
-        var fs = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await fs.CopyToAsync(ms, cancellationToken);
-        fs.Close();
+        var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
         _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Read)));
 
-        return ms.ToArray();
+        return fileStream;
     }
 
     public void Delete(string fileName)

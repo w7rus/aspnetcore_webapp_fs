@@ -1,10 +1,10 @@
-﻿using System.Net.Http.Headers;
-using Common.Models.Base;
+﻿using Common.Models.Base;
 
 namespace DTO.Models.File;
 
 public class FileReadResult : DTOResultBase
 {
-    public byte[] Data { get; set; }
+    public FileStream FileStream { get; set; }
     public string ContentType { get; set; }
+    public string FileName { get; set; }
 }

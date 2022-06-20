@@ -25,7 +25,6 @@
 // app.Run();
 
 using System.Reflection;
-using ASP.NET_Core_Web_Application_File_Server;
 using Serilog;
 
 namespace API
@@ -105,7 +104,7 @@ namespace API
                         config.AddCommandLine(args);
                     }
                 })
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>().UseSerilog(); })
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
                 .UseSerilog((context, services, configuration) => configuration
                     .ReadFrom.Configuration(context.Configuration)
                     .ReadFrom.Services(services)

@@ -1,6 +1,6 @@
-﻿using BLL.Handlers.Base;
+﻿using System.Net.Mime;
+using BLL.Handlers.Base;
 using BLL.Services;
-using Common.Exceptions;
 using Common.Models;
 using Common.Models.Base;
 using DTO.Models.File;
@@ -12,8 +12,8 @@ namespace BLL.Handlers;
 
 public interface IFileHandler
 {
-    Task<DTOResultBase> Create(FileCreate data, IFormFile formFile, CancellationToken cancellationToken = default);
-    Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = default);
+    Task<DTOResultBase> Create(string fileNameOriginal, Stream stream, CancellationToken cancellationToken = default);
+    DTOResultBase Read(FileRead data, CancellationToken cancellationToken = default);
     DTOResultBase Delete(FileDelete data);
 }
 
@@ -42,22 +42,13 @@ public class FileHandler : HandlerBase, IFileHandler
 
     #region Methods
 
-    public async Task<DTOResultBase> Create(
-        FileCreate data,
-        IFormFile formFile,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<DTOResultBase> Create(string fileNameOriginal, Stream stream, CancellationToken cancellationToken = default)
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Create)));
 
-        if (ValidateModel(data) is { } validationResult)
-            return validationResult;
-
-        var fileInfo = new FileInfo(formFile.FileName);
+        var fileInfo = new FileInfo(fileNameOriginal);
         var fileName = Guid.NewGuid() + fileInfo.Extension;
-        var ms = new MemoryStream();
-        await formFile.OpenReadStream().CopyToAsync(ms, cancellationToken);
-        await _fileService.Save(fileName, ms.ToArray(), cancellationToken);
+        await _fileService.Save(fileName, stream, cancellationToken);
 
         _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Create)));
 
@@ -66,21 +57,21 @@ public class FileHandler : HandlerBase, IFileHandler
             FileName = fileName
         };
     }
-
-    public async Task<DTOResultBase> Read(FileRead data, CancellationToken cancellationToken = default)
+    
+    public DTOResultBase Read(FileRead data, CancellationToken cancellationToken = default)
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Read)));
 
         if (ValidateModel(data) is { } validationResult)
             return validationResult;
 
-        var fileData = await _fileService.Read(data.FileName, cancellationToken);
+        var fileStream = _fileService.Read(data.FileName, cancellationToken);
 
         var contentTypeProvider = new FileExtensionContentTypeProvider();
         if (!contentTypeProvider.TryGetContentType(data.FileName, out var contentType))
             contentType = "application/octet-stream";
 
-        var contentDisposition = new System.Net.Mime.ContentDisposition
+        var contentDisposition = new ContentDisposition
         {
             FileName = data.FileName,
             Inline = true,
@@ -91,7 +82,8 @@ public class FileHandler : HandlerBase, IFileHandler
 
         return new FileReadResult
         {
-            Data = fileData,
+            FileStream = fileStream,
+            FileName = data.FileName,
             ContentType = contentType
         };
     }

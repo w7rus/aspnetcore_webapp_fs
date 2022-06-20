@@ -13,10 +13,29 @@ public static class Localize
         public const string FileDeleteFailed = "FileDeleteFailed";
 
         #endregion
+
+        #region Request
+
+        public const string RequestMultipartExpected = "RequestMultipartExpected";
+        public const string RequestContentTypeBoundaryNotFound = "RequestContentTypeBoundaryNotFound";
+        public const string RequestMultipartBoundaryLengthExceedsLimit = "RequestMultipartBoundaryLengthExceedsLimit";
+        public const string RequestMultipartSectionEncodingNotSupported = "RequestMultipartSectionEncodingNotSupported";
+        public const string RequestMultipartSectionNotFound = "RequestMultipartSectionNotFound";
+        public const string RequestContentDispositionParseFailed = "RequestContentDispositionParseFailed";
+        public const string RequestContentDispositionFileExpected = "RequestContentDispositionFileExpected";
+
+        #endregion
         
         #region UnhandledException
 
         public const string UnhandledExceptionContactSystemAdministrator = "UnhandledExceptionContactSystemAdministrator";
+
+        #endregion
+
+        #region Generic
+
+        public static string ObjectDeserializationFailed => "ObjectDeserializationFailed";
+        public static string ObjectCastFailed => "ObjectCastFailed";
 
         #endregion
     }

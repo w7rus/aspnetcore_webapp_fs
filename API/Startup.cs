@@ -3,14 +3,13 @@ using API.Extensions;
 using Common.Enums;
 using Common.Filters;
 using Common.Models;
-using Common.Models.Base;
 using Common.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
-namespace ASP.NET_Core_Web_Application_File_Server;
+namespace API;
 
 public class Startup
 {

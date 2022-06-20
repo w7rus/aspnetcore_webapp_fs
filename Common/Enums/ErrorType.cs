@@ -7,5 +7,7 @@ public enum ErrorType
     Unhandled,
     ModelState,
     HttpContext,
-    Auth
+    Auth,
+    File,
+    Request,
 }
