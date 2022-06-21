@@ -7,10 +7,12 @@ using Common.Enums;
 using Common.Exceptions;
 using Common.Helpers;
 using Common.Models;
+using Common.Options;
 using DTO.Models.File;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -27,6 +29,7 @@ public class FileController : CustomControllerBase
 
     private readonly ILogger<FileController> _logger;
     private readonly IFileHandler _fileHandler;
+    private readonly MiscOptions _miscOptions;
 
     #endregion
 
@@ -35,11 +38,13 @@ public class FileController : CustomControllerBase
     public FileController(
         ILogger<FileController> logger,
         IFileHandler fileHandler,
+        IOptions<MiscOptions> miscOptions,
         IHttpContextAccessor httpContextAccessor
     ) : base(httpContextAccessor)
     {
         _logger = logger;
         _fileHandler = fileHandler;
+        _miscOptions = miscOptions.Value;
     }
 
     #endregion
@@ -47,8 +52,8 @@ public class FileController : CustomControllerBase
     #region Endpoints
 
     [DisableFormValueModelBinding]
-    [RequestSizeLimit(134217728L)]
-    [RequestFormLimits(MultipartBodyLengthLimit = 134217728L)]
+    [RequestSizeLimit(1073741824L)] //1GB
+    [RequestFormLimits(MultipartBodyLengthLimit = 1073741824L)] //1GB
     [HttpPost]
     [SwaggerOperation(Summary = "Creates file",
         Description = "Creates file")]
@@ -61,28 +66,28 @@ public class FileController : CustomControllerBase
             throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
                 Localize.Error.RequestMultipartExpected);
         }
-        
+    
         var boundary = MultipartRequestHelper.GetBoundary(MediaTypeHeaderValue.Parse(Request.ContentType));
         var reader = new MultipartReader(boundary, HttpContext.Request.Body);
-
+    
         var multipartSection = await reader.ReadNextSectionAsync(cancellationToken);
-
+    
         if (multipartSection == null)
             throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
                 Localize.Error.RequestMultipartSectionNotFound);
-
+    
         if (!ContentDispositionHeaderValue.TryParse(
                 multipartSection.ContentDisposition, out var contentDisposition))
             throw new HttpResponseException(StatusCodes.Status500InternalServerError, ErrorType.Request,
                 Localize.Error.RequestContentDispositionParseFailed);
-
+    
         if (!MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
             throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
                 Localize.Error.RequestContentDispositionFileExpected);
 
+        var fileName = WebUtility.HtmlEncode(contentDisposition.FileName.Value);
         await using var fileStream = multipartSection.Body;
-        return ResponseWith(await _fileHandler.Create(WebUtility.HtmlEncode(
-            contentDisposition.FileName.Value), fileStream, cancellationToken));
+        return ResponseWith(await _fileHandler.Create(fileName, fileStream, cancellationToken));
     }
 
     [HttpGet]
@@ -104,8 +109,7 @@ public class FileController : CustomControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Delete(
-        [Required] [FromQuery] FileDelete data,
-        CancellationToken cancellationToken = new()
+        [Required] [FromQuery] FileDelete data
     )
     {
         return ResponseWith(_fileHandler.Delete(data));

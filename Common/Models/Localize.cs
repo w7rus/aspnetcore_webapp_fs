@@ -19,7 +19,6 @@ public static class Localize
         public const string RequestMultipartExpected = "RequestMultipartExpected";
         public const string RequestContentTypeBoundaryNotFound = "RequestContentTypeBoundaryNotFound";
         public const string RequestMultipartBoundaryLengthExceedsLimit = "RequestMultipartBoundaryLengthExceedsLimit";
-        public const string RequestMultipartSectionEncodingNotSupported = "RequestMultipartSectionEncodingNotSupported";
         public const string RequestMultipartSectionNotFound = "RequestMultipartSectionNotFound";
         public const string RequestContentDispositionParseFailed = "RequestContentDispositionParseFailed";
         public const string RequestContentDispositionFileExpected = "RequestContentDispositionFileExpected";

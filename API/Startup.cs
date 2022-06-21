@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using API.Extensions;
 using Common.Enums;
 using Common.Filters;
@@ -39,11 +41,14 @@ public class Startup
 
         services.AddCors();
 
-        services.AddControllers(options =>
-        {
-            options.Filters.Add<HttpResponseExceptionFilter>();
-        });
-        
+        services
+            .AddControllers(options => { options.Filters.Add<HttpResponseExceptionFilter>(); })
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNameCaseInsensitive = false;
+                options.JsonSerializerOptions.PropertyNamingPolicy = null;
+            });
+
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo
@@ -53,7 +58,7 @@ public class Startup
                 Description = "An API of ASP.NET Core Web Application File Server",
                 Contact = new OpenApiContact
                 {
-                    Name = "Grigory Bragin",
+                    Name = "Grigory (w7rus) Bragin",
                     Url = new Uri("https://t.me/w7rus"),
                     Email = "bragingrigory@gmail.com"
                 }
@@ -105,14 +110,15 @@ public class Startup
             // app.UseExceptionHandler("/Error");
             app.UseHsts();
         }
-        
+
         app.UseSerilogRequestLogging(options =>
         {
             options.MessageTemplate =
                 "[{httpContextTraceIdentifier}] {httpContextRequestProtocol} {httpContextRequestMethod} {httpContextRequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
             options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
             {
-                diagnosticContext.Set("httpContextTraceIdentifier", Activity.Current?.Id ?? httpContext.TraceIdentifier);
+                diagnosticContext.Set("httpContextTraceIdentifier",
+                    Activity.Current?.Id ?? httpContext.TraceIdentifier);
                 diagnosticContext.Set("httpContextConnectionId", httpContext.Connection.Id);
                 diagnosticContext.Set("httpContextConnectionRemoteIpAddress", httpContext.Connection.RemoteIpAddress);
                 diagnosticContext.Set("httpContextConnectionRemotePort", httpContext.Connection.RemotePort);
@@ -130,7 +136,7 @@ public class Startup
                 diagnosticContext.Set("httpContextRequestCookies", httpContext.Request.Cookies);
             };
         });
-        
+
         app.UseExceptionHandler("/Error");
 
         app.UseRouting();
