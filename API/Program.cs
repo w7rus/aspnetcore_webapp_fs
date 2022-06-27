@@ -27,98 +27,94 @@
 using System.Reflection;
 using Serilog;
 
-namespace API
+namespace API;
+
+public static class Program
 {
-    public static class Program
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateBootstrapLogger();
+
+        Log.Information("Application starting...");
+
+        var app = CreateHostBuilder(args).Build();
+
+        var env = app.Services.GetRequiredService<IWebHostEnvironment>();
+
+        if (env.IsDevelopment())
         {
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .CreateBootstrapLogger();
+            var config = app.Services.GetRequiredService<IConfiguration>();
 
-            Log.Information("Application starting...");
-            
-            var app = CreateHostBuilder(args).Build();
+            foreach (var c in config.AsEnumerable()) Console.WriteLine(c.Key + " = " + c.Value);
+        }
 
-            var env = app.Services.GetRequiredService<IWebHostEnvironment>();
+        try
+        {
+            await app.RunAsync();
+            Log.Information("Application stopping...");
+        }
+        catch (Exception e)
+        {
+            Log.Fatal(e, "An unhandled exception occured during bootstrapping!");
+        }
+        finally
+        {
+            Log.Information("Flushing logs...");
+            Log.CloseAndFlush();
+        }
+    }
 
-            if (env.IsDevelopment())
+    private static IHostBuilder CreateHostBuilder(string[] args)
+    {
+        return Host.CreateDefaultBuilder(args)
+            .UseSerilog((context, services, configuration) => configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .Enrich.FromLogContext()
+                .WriteTo.Console())
+            .ConfigureAppConfiguration((hostingContext, config) =>
             {
-                var config = app.Services.GetRequiredService<IConfiguration>();
+                Log.Information("Add JSON configurations...");
+                config.AddJsonFile(
+                    Path.Combine(hostingContext.HostingEnvironment.ContentRootPath,
+                        $"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json"), true,
+                    true);
+                config.AddJsonFile(
+                    Path.Combine(hostingContext.HostingEnvironment.ContentRootPath, "appsettings.Local.json"),
+                    true, true);
 
-                foreach (var c in config.AsEnumerable())
+                if (hostingContext.HostingEnvironment.IsDevelopment())
                 {
-                    Console.WriteLine(c.Key + " = " + c.Value);
+                    Log.Information("Add user secrets...");
+                    var appAssembly =
+                        Assembly.Load(new AssemblyName(hostingContext.HostingEnvironment.ApplicationName));
+                    config.AddUserSecrets(appAssembly, true);
                 }
-            }
 
-            try
-            {
-                await app.RunAsync();
-                Log.Information("Application stopping...");
-            }
-            catch (Exception e)
-            {
-                Log.Fatal(e, "An unhandled exception occured during bootstrapping!");
-            }
-            finally
-            {
-                Log.Information("Flushing logs...");
-                Log.CloseAndFlush();
-            }
-        }
+                Log.Information("Add environment variables...");
+                config.AddEnvironmentVariables();
 
-        private static IHostBuilder CreateHostBuilder(string[] args)
-        {
-            return Host.CreateDefaultBuilder(args)
-                .UseSerilog((context, services, configuration) => configuration
-                    .ReadFrom.Configuration(context.Configuration)
-                    .Enrich.FromLogContext()
-                    .WriteTo.Console())
-                .ConfigureAppConfiguration((hostingContext, config) =>
+                if (args != null)
                 {
-                    Log.Information("Add JSON configurations...");
-                    config.AddJsonFile(
-                        Path.Combine(hostingContext.HostingEnvironment.ContentRootPath,
-                            $"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json"), optional: true,
-                        reloadOnChange: true);
-                    config.AddJsonFile(
-                        Path.Combine(hostingContext.HostingEnvironment.ContentRootPath, $"appsettings.Local.json"),
-                        optional: true, reloadOnChange: true);
-
-                    if (hostingContext.HostingEnvironment.IsDevelopment())
-                    {
-                        Log.Information("Add user secrets...");
-                        var appAssembly =
-                            Assembly.Load(new AssemblyName(hostingContext.HostingEnvironment.ApplicationName));
-                        config.AddUserSecrets(appAssembly, true);
-                    }
-
-                    Log.Information("Add environment variables...");
-                    config.AddEnvironmentVariables();
-
-                    if (args != null)
-                    {
-                        Log.Information("Add command line args...");
-                        config.AddCommandLine(args);
-                    }
-                })
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
-                .UseSerilog((context, services, configuration) => configuration
-                    .ReadFrom.Configuration(context.Configuration)
-                    .ReadFrom.Services(services)
-                    .Enrich.FromLogContext()
-                    .Enrich.WithAssemblyName()
-                    .Enrich.WithEnvironmentName()
-                    .Enrich.WithMachineName()
-                    .Enrich.WithMemoryUsage()
-                    .Enrich.WithProcessId()
-                    .Enrich.WithProcessName()
-                    .Enrich.WithThreadId()
-                    .Enrich.WithThreadName()
-                    .WriteTo.Seq("http://localhost:5341")
-                    .WriteTo.Console());
-        }
+                    Log.Information("Add command line args...");
+                    config.AddCommandLine(args);
+                }
+            })
+            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
+            .UseSerilog((context, services, configuration) => configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .Enrich.WithAssemblyName()
+                .Enrich.WithEnvironmentName()
+                .Enrich.WithMachineName()
+                .Enrich.WithMemoryUsage()
+                .Enrich.WithProcessId()
+                .Enrich.WithProcessName()
+                .Enrich.WithThreadId()
+                .Enrich.WithThreadName()
+                .WriteTo.Seq("http://localhost:5341")
+                .WriteTo.Console());
     }
 }

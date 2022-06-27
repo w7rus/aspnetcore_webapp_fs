@@ -8,5 +8,5 @@ public enum ErrorType
     ModelState,
     HttpContext,
     Request,
-    HttpClient,
+    HttpClient
 }

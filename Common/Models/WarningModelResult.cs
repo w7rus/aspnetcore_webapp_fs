@@ -1,21 +1,24 @@
-﻿using System.Collections.Generic;
-using Common.Enums;
+﻿using Common.Enums;
 using Common.Models.Base;
 
 namespace Common.Models;
 
 public class WarningModelResultEntry
 {
-    public WarningType WarningType { get; }
-    public string Message { get; }
-    public WarningEntryType WarningEntryType { get; }
-    
-    public WarningModelResultEntry(WarningType warningType, string message, WarningEntryType warningEntryType = WarningEntryType.None)
+    public WarningModelResultEntry(
+        WarningType warningType,
+        string message,
+        WarningEntryType warningEntryType = WarningEntryType.None
+    )
     {
         WarningType = warningType;
         Message = message;
         WarningEntryType = warningEntryType;
     }
+
+    public WarningType WarningType { get; }
+    public string Message { get; }
+    public WarningEntryType WarningEntryType { get; }
 }
 
 public interface IWarningModelResult

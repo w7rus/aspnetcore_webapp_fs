@@ -25,14 +25,6 @@ namespace API.Controllers;
 [ProducesResponseType(typeof(ErrorModelResult), StatusCodes.Status400BadRequest)]
 public class FileController : CustomControllerBase
 {
-    #region Fields
-
-    private readonly ILogger<FileController> _logger;
-    private readonly IFileHandler _fileHandler;
-    private readonly MiscOptions _miscOptions;
-
-    #endregion
-
     #region Ctor
 
     public FileController(
@@ -49,6 +41,14 @@ public class FileController : CustomControllerBase
 
     #endregion
 
+    #region Fields
+
+    private readonly ILogger<FileController> _logger;
+    private readonly IFileHandler _fileHandler;
+    private readonly MiscOptions _miscOptions;
+
+    #endregion
+
     #region Endpoints
 
     [DisableFormValueModelBinding]
@@ -62,25 +62,23 @@ public class FileController : CustomControllerBase
     public async Task<IActionResult> Create(CancellationToken cancellationToken = default)
     {
         if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
-        {
             throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
                 Localize.Error.RequestMultipartExpected);
-        }
-    
+
         var boundary = MultipartRequestHelper.GetBoundary(MediaTypeHeaderValue.Parse(Request.ContentType));
         var reader = new MultipartReader(boundary, HttpContext.Request.Body);
-    
+
         var multipartSection = await reader.ReadNextSectionAsync(cancellationToken);
-    
+
         if (multipartSection == null)
             throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
                 Localize.Error.RequestMultipartSectionNotFound);
-    
+
         if (!ContentDispositionHeaderValue.TryParse(
                 multipartSection.ContentDisposition, out var contentDisposition))
             throw new HttpResponseException(StatusCodes.Status500InternalServerError, ErrorType.Request,
                 Localize.Error.RequestContentDispositionParseFailed);
-    
+
         if (!MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
             throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
                 Localize.Error.RequestContentDispositionFileExpected);

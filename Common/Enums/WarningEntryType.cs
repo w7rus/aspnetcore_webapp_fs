@@ -3,5 +3,5 @@
 public enum WarningEntryType
 {
     None,
-    Unknown,
+    Unknown
 }

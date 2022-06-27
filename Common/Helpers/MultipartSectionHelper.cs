@@ -15,9 +15,7 @@ public static class MultipartSectionHelper
 #pragma warning disable SYSLIB0001
         if (!hasMediaTypeHeader || Encoding.UTF7.Equals(mediaType.Encoding))
 #pragma warning restore SYSLIB0001
-        {
             return Encoding.UTF8;
-        }
 
         return mediaType.Encoding;
     }

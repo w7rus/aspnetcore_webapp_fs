@@ -14,14 +14,6 @@ public interface IFileService
 
 public class FileService : IFileService
 {
-    #region Fields
-
-    private readonly string _fullName;
-    private readonly ILogger<FileService> _logger;
-    private readonly MiscOptions _miscOptions;
-
-    #endregion
-
     #region Ctor
 
     public FileService(ILogger<FileService> logger, IOptions<MiscOptions> miscOptions)
@@ -30,6 +22,14 @@ public class FileService : IFileService
         _logger = logger;
         _miscOptions = miscOptions.Value;
     }
+
+    #endregion
+
+    #region Fields
+
+    private readonly string _fullName;
+    private readonly ILogger<FileService> _logger;
+    private readonly MiscOptions _miscOptions;
 
     #endregion
 

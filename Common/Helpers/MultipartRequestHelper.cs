@@ -15,10 +15,12 @@ public class MultipartRequestHelper
         var boundary = HeaderUtilities.RemoveQuotes(contentType.Boundary).Value;
 
         if (string.IsNullOrWhiteSpace(boundary))
-            throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request, Localize.Error.RequestContentTypeBoundaryNotFound);
+            throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
+                Localize.Error.RequestContentTypeBoundaryNotFound);
 
         if (boundary.Length > lengthLimit)
-            throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request, Localize.Error.RequestMultipartBoundaryLengthExceedsLimit);
+            throw new HttpResponseException(StatusCodes.Status400BadRequest, ErrorType.Request,
+                Localize.Error.RequestMultipartBoundaryLengthExceedsLimit);
 
         return boundary;
     }
@@ -33,17 +35,17 @@ public class MultipartRequestHelper
     {
         // Content-Disposition: form-data; name="key";
         return contentDisposition != null
-            && contentDisposition.DispositionType.Equals("form-data")
-            && string.IsNullOrEmpty(contentDisposition.FileName.Value)
-            && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
+               && contentDisposition.DispositionType.Equals("form-data")
+               && string.IsNullOrEmpty(contentDisposition.FileName.Value)
+               && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
     }
 
     public static bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
     {
         // Content-Disposition: form-data; name="myfile1"; filename="Misc 002.jpg"
         return contentDisposition != null
-            && contentDisposition.DispositionType.Equals("form-data")
-            && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
-                || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
+               && contentDisposition.DispositionType.Equals("form-data")
+               && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
+                   || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
     }
 }

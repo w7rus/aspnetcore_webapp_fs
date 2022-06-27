@@ -19,15 +19,6 @@ public interface IFileHandler
 
 public class FileHandler : HandlerBase, IFileHandler
 {
-    #region Fields
-
-    private readonly string _fullName;
-    private readonly ILogger<FileHandler> _logger;
-    private readonly IFileService _fileService;
-    private readonly HttpContext _httpContext;
-
-    #endregion
-
     #region Ctor
 
     public FileHandler(ILogger<FileHandler> logger, IFileService fileService, IHttpContextAccessor httpContextAccessor)
@@ -40,9 +31,22 @@ public class FileHandler : HandlerBase, IFileHandler
 
     #endregion
 
+    #region Fields
+
+    private readonly string _fullName;
+    private readonly ILogger<FileHandler> _logger;
+    private readonly IFileService _fileService;
+    private readonly HttpContext _httpContext;
+
+    #endregion
+
     #region Methods
 
-    public async Task<DTOResultBase> Create(string fileNameOriginal, Stream stream, CancellationToken cancellationToken = default)
+    public async Task<DTOResultBase> Create(
+        string fileNameOriginal,
+        Stream stream,
+        CancellationToken cancellationToken = default
+    )
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Create)));
 
@@ -57,7 +61,7 @@ public class FileHandler : HandlerBase, IFileHandler
             FileName = fileName
         };
     }
-    
+
     public DTOResultBase Read(FileRead data, CancellationToken cancellationToken = default)
     {
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Read)));
@@ -74,7 +78,7 @@ public class FileHandler : HandlerBase, IFileHandler
         var contentDisposition = new ContentDisposition
         {
             FileName = data.FileName,
-            Inline = true,
+            Inline = true
         };
         _httpContext.Response.Headers.Append("Content-Disposition", contentDisposition.ToString());
 

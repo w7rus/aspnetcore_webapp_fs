@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using API.Extensions;
 using Common.Enums;
 using Common.Filters;
@@ -15,13 +13,6 @@ namespace API;
 
 public class Startup
 {
-    #region Fields
-
-    private readonly IWebHostEnvironment _env;
-    private IConfiguration Configuration { get; }
-
-    #endregion
-
     #region Ctor
 
     public Startup(IConfiguration configuration, IWebHostEnvironment env)
@@ -29,6 +20,13 @@ public class Startup
         _env = env;
         Configuration = configuration;
     }
+
+    #endregion
+
+    #region Fields
+
+    private readonly IWebHostEnvironment _env;
+    private IConfiguration Configuration { get; }
 
     #endregion
 
@@ -101,7 +99,7 @@ public class Startup
         {
             // app.UseDeveloperExceptionPage();
 
-            Log.Logger.Information($"Add Swagger & SwaggerUI");
+            Log.Logger.Information("Add Swagger & SwaggerUI");
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
         }

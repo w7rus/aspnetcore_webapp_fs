@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Common.Exceptions;
 using Common.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -9,8 +8,6 @@ namespace Common.Filters;
 
 public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
 {
-    public int Order => int.MaxValue - 10;
-
     public void OnActionExecuting(ActionExecutingContext context)
     {
     }
@@ -26,7 +23,7 @@ public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
 
             errorModelResult.Errors.Add(new ErrorModelResultEntry(httpResponseException.Type,
                 httpResponseException.Message));
-            
+
             context.Result = new ObjectResult(errorModelResult)
             {
                 StatusCode = httpResponseException.StatusCode
@@ -35,4 +32,6 @@ public class HttpResponseExceptionFilter : IActionFilter, IOrderedFilter
             context.ExceptionHandled = true;
         }
     }
+
+    public int Order => int.MaxValue - 10;
 }
