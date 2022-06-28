@@ -1,1 +1,1 @@
-docker build -t aspnetcore_webapp_fs
+docker build . -t aspnetcore_webapp_fs
