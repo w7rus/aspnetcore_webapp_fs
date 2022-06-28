@@ -120,7 +120,7 @@ public static class Program
                     .Enrich.WithProcessName()
                     .Enrich.WithThreadId()
                     .Enrich.WithThreadName()
-                    .WriteTo.Seq( $"{seqOptions.Endpoint.Scheme}://{seqOptions.Endpoint.Host}:{seqOptions.Endpoint.Port}")
+                    .WriteTo.Seq( $"{seqOptions.Endpoint.Scheme}://{seqOptions.Endpoint.Host}:{seqOptions.Endpoint.Port}", apiKey: seqOptions.ApiKey)
                     .WriteTo.Console();
             });
     }
