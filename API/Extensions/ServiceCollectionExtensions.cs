@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
     {
         serviceCollection.AddOptions();
         serviceCollection.Configure<MiscOptions>(configuration.GetSection(nameof(MiscOptions)));
+        serviceCollection.Configure<SeqOptions>(configuration.GetSection(nameof(SeqOptions)));
 
         return serviceCollection;
     }
