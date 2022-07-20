@@ -108,6 +108,9 @@ public static class Program
             {
                 var seqOptions = services.GetService<IOptions<SeqOptions>>()?.Value ?? throw new ApplicationException("Dependency IOptions<SeqOptions> not found!");
                 
+                var seqUri = new UriBuilder(seqOptions.Endpoint.Scheme, seqOptions.Endpoint.Host,
+                    seqOptions.Endpoint.Port, seqOptions.Endpoint.Path);
+                
                 configuration
                     .ReadFrom.Configuration(context.Configuration)
                     .ReadFrom.Services(services)
@@ -120,7 +123,7 @@ public static class Program
                     .Enrich.WithProcessName()
                     .Enrich.WithThreadId()
                     .Enrich.WithThreadName()
-                    .WriteTo.Seq( $"{seqOptions.Endpoint.Scheme}://{seqOptions.Endpoint.Host}:{seqOptions.Endpoint.Port}", apiKey: seqOptions.ApiKey)
+                    .WriteTo.Seq(seqUri.ToString(), apiKey: seqOptions.ApiKey)
                     .WriteTo.Console();
             });
     }

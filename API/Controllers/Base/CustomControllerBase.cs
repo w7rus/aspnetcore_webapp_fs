@@ -31,7 +31,11 @@ public class CustomControllerBase : ControllerBase
         if (response.Errors != null && response.Errors.Any())
             return new BadRequestObjectResult(response);
         if (response is FileReadResult result)
-            return File(result.FileStream, result.ContentType, result.FileName);
+        {
+            var file = File(result.FileStream, result.ContentType, result.FileName);
+            file.EnableRangeProcessing = true;
+            return file;
+        }
 
         return new OkObjectResult(response);
     }
