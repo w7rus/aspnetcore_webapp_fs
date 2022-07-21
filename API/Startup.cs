@@ -66,6 +66,18 @@ public class Startup
         });
 
         services.AddHttpContextAccessor();
+        
+        var miscOptions = Configuration
+            .GetSection(nameof(MiscOptions))
+            .Get<MiscOptions>();
+        
+        services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins(miscOptions.CorsAllowedOrigins).AllowAnyMethod();
+            });
+        });
 
         services.Configure<ApiBehaviorOptions>(options =>
         {
@@ -142,7 +154,7 @@ public class Startup
         app.UseAuthentication();
         app.UseAuthorization();
 
-        app.UseCors(options => options.WithOrigins(miscOptions.Value.CorsAllowedOrigins).AllowAnyMethod());
+        app.UseCors();
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
