@@ -108,11 +108,8 @@ public static class Program
             {
                 var seqOptions = services.GetService<IOptions<SeqOptions>>()?.Value ?? throw new ApplicationException("Dependency IOptions<SeqOptions> not found!");
                 
-                var seqUri = new UriBuilder(seqOptions.Endpoint.Scheme, seqOptions.Endpoint.Host);
-
-                if (seqOptions.Endpoint.Port != 80 || seqOptions.Endpoint.Port != 443)
-                    seqUri.Port = seqOptions.Endpoint.Port;
-                seqUri.Path = seqOptions.Endpoint.Path;
+                var seqUri = new UriBuilder(seqOptions.Endpoint.Scheme, seqOptions.Endpoint.Host,
+                    seqOptions.Endpoint.Port, seqOptions.Endpoint.Path);
                 
                 configuration
                     .ReadFrom.Configuration(context.Configuration)
