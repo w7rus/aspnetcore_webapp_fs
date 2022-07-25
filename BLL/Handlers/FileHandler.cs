@@ -52,13 +52,14 @@ public class FileHandler : HandlerBase, IFileHandler
 
         var fileInfo = new FileInfo(fileNameOriginal);
         var fileName = Guid.NewGuid() + fileInfo.Extension;
-        await _fileService.Save(fileName, stream, cancellationToken);
+        var size = await _fileService.Save(fileName, stream, cancellationToken);
 
         _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Create)));
 
         return new FileCreateResult
         {
-            FileName = fileName
+            FileName = fileName,
+            Size = size
         };
     }
 

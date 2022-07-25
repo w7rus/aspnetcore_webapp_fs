@@ -7,7 +7,7 @@ namespace BLL.Services;
 
 public interface IFileService
 {
-    Task Save(string fileName, Stream stream, CancellationToken cancellationToken = default);
+    Task<long> Save(string fileName, Stream stream, CancellationToken cancellationToken = default);
     FileStream Read(string fileName, CancellationToken cancellationToken = default);
     void Delete(string fileName);
 }
@@ -35,7 +35,7 @@ public class FileService : IFileService
 
     #region Methods
 
-    public async Task Save(string fileName, Stream stream, CancellationToken cancellationToken = default)
+    public async Task<long> Save(string fileName, Stream stream, CancellationToken cancellationToken = default)
     {
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);
@@ -44,6 +44,8 @@ public class FileService : IFileService
         await stream.CopyToAsync(fileStream, cancellationToken);
         await fileStream.FlushAsync(cancellationToken);
         fileStream.Close();
+
+        return new FileInfo(filePath).Length;
     }
 
     public FileStream Read(string fileName, CancellationToken cancellationToken)
