@@ -62,79 +62,79 @@ public class FileService : IFileService
 
         var fectp = new FileExtensionContentTypeProvider();
 
-        try
-        {
-            if (fectp.Mappings[fileInfo.Extension].StartsWith("video/"))
+        if (_miscOptions.IsFilePreviewsEnabled)
+            try
             {
-                var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
-
-                var ffmpeg = new Process()
+                if (fectp.Mappings[fileInfo.Extension].StartsWith("video/"))
                 {
-                    StartInfo = new ProcessStartInfo
+                    var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
+
+                    var ffmpeg = new Process()
                     {
-                        FileName = "ffmpeg",
-                        Arguments =
-                            $"-ss 00:00:01.00 -i \"" + filePath + "\" -vf \"scale=320:320:force_original_aspect_ratio=decrease\" -vframes 1 \"" + filePathPreview + "\"",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = false,
-                        RedirectStandardInput = false,
-                        RedirectStandardError = false,
-                        CreateNoWindow = true
-                    }
-                };
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "ffmpeg",
+                            Arguments =
+                                $"-ss 00:00:01.00 -i \"{filePath}\" -vf \"scale={_miscOptions.FilePreviewMaxLongEdgeLength}:{_miscOptions.FilePreviewMaxLongEdgeLength}:force_original_aspect_ratio=decrease\" -vframes 1 \"{filePathPreview}\"",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = false,
+                            RedirectStandardInput = false,
+                            RedirectStandardError = false,
+                            CreateNoWindow = true
+                        }
+                    };
 
-                if (!ffmpeg.Start())
-                    throw new CustomException($"Failed to start ffmpeg for file \"{filePath}\"!");
+                    if (!ffmpeg.Start())
+                        throw new CustomException($"Failed to start ffmpeg for file \"{filePath}\"!");
 
-                await ffmpeg.WaitForExitAsync(cancellationToken);
+                    await ffmpeg.WaitForExitAsync(cancellationToken);
+                    
+                    var fileInfoPreview = new FileInfo(filePathPreview);
+                    
+                    return (fileInfo.Length, fileInfo.Name, fileInfoPreview.Name);
+                }
+
+                if (fectp.Mappings[fileInfo.Extension].StartsWith("image/"))
+                {
+                    var bitmap = SKBitmap.Decode(filePath);
+
+                    var maxWidthHeight = Math.Max(bitmap.Width, bitmap.Height);
+
+                    var scaleFactor = _miscOptions.FilePreviewMaxLongEdgeLength / (float)maxWidthHeight;
+
+                    var newWidth = (int)Math.Round(bitmap.Width * scaleFactor);
+                    var newHeight = (int)Math.Round(bitmap.Height * scaleFactor);
+
+                    var toBitmap = new SKBitmap(newWidth, newHeight, bitmap.ColorType, bitmap.AlphaType);
+                    
+                    var canvas = new SKCanvas(toBitmap);
+                    canvas.SetMatrix(SKMatrix.CreateScale(scaleFactor, scaleFactor));
+
+                    canvas.DrawBitmap(bitmap, 0, 0);
+                    canvas.ResetMatrix();
+                    canvas.Flush();
+
+                    var image = SKImage.FromBitmap(toBitmap);
+                    var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
+
+                    var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
+                    var fileStreamPreview = new FileStream(filePathPreview, FileMode.CreateNew, FileAccess.Write);
+                    data.SaveTo(fileStreamPreview);
+                    await fileStreamPreview.FlushAsync(cancellationToken);
+                    fileStreamPreview.Close();
+
+                    var fileInfoPreview = new FileInfo(filePathPreview);
+
+                    return (fileInfo.Length, fileInfo.Name, fileInfoPreview.Name);
+                }
                 
-                var fileInfoPreview = new FileInfo(filePathPreview);
-                
-                return (fileInfo.Length, fileInfo.Name, fileInfoPreview.Name);
+                _logger.LogInformation(Localize.Log.Method(_fullName, nameof(Save),
+                    $"Skipping to generate preview for file \"{filePath}\": File type not supported!"));
             }
-
-            if (fectp.Mappings[fileInfo.Extension].StartsWith("image/"))
+            catch (Exception e)
             {
-                var bitmap = SKBitmap.Decode(filePath);
-
-                var maxWidthHeight = Math.Max(bitmap.Width, bitmap.Height);
-                var requiredMaxWidthHeight = 256;
-
-                var scaleFactor = requiredMaxWidthHeight / (float)maxWidthHeight;
-
-                var newWidth = (int)Math.Round(bitmap.Width * scaleFactor);
-                var newHeight = (int)Math.Round(bitmap.Height * scaleFactor);
-
-                var toBitmap = new SKBitmap(newWidth, newHeight, bitmap.ColorType, bitmap.AlphaType);
-                
-                var canvas = new SKCanvas(toBitmap);
-                canvas.SetMatrix(SKMatrix.CreateScale(scaleFactor, scaleFactor));
-
-                canvas.DrawBitmap(bitmap, 0, 0);
-                canvas.ResetMatrix();
-                canvas.Flush();
-
-                var image = SKImage.FromBitmap(toBitmap);
-                var data = image.Encode(SKEncodedImageFormat.Jpeg, 90);
-
-                var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
-                var fileStreamPreview = new FileStream(filePathPreview, FileMode.CreateNew, FileAccess.Write);
-                data.SaveTo(fileStreamPreview);
-                await fileStreamPreview.FlushAsync(cancellationToken);
-                fileStreamPreview.Close();
-
-                var fileInfoPreview = new FileInfo(filePathPreview);
-
-                return (fileInfo.Length, fileInfo.Name, fileInfoPreview.Name);
+                throw new CustomException($"Failed to generate preview for file \"{filePath}\": Exception: {e}");
             }
-            
-            _logger.LogInformation(Localize.Log.Method(_fullName, nameof(Save),
-                $"Skipping to generate preview for file \"{filePath}\": File type not supported!"));
-        }
-        catch (Exception e)
-        {
-            throw new CustomException($"Failed to generate preview for file \"{filePath}\": Exception: {e}");
-        }
 
         return (fileInfo.Length, fileInfo.Name, null);
     }
@@ -146,7 +146,7 @@ public class FileService : IFileService
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);
         Directory.CreateDirectory(dirPath);
-        var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
         _logger.Log(LogLevel.Information, Localize.Log.MethodEnd(_fullName, nameof(Read)));
 
