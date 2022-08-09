@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Swashbuckle.AspNetCore.Annotations;
+using AuthenticationSchemes = Common.Models.AuthenticationSchemes;
 
 namespace API.Controllers;
 
@@ -55,6 +56,7 @@ public class FileController : CustomControllerBase
     [RequestSizeLimit(1073741824L)] //1GB
     [RequestFormLimits(MultipartBodyLengthLimit = 1073741824L)] //1GB
     [HttpPost]
+    [Authorize(AuthenticationSchemes = AuthenticationSchemes.AccessToken)]
     [SwaggerOperation(Summary = "Creates file",
         Description = "Creates file")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -89,6 +91,7 @@ public class FileController : CustomControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     [SwaggerOperation(Summary = "Reads file",
         Description = "Reads file")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -102,6 +105,7 @@ public class FileController : CustomControllerBase
     }
 
     [HttpDelete]
+    [Authorize(AuthenticationSchemes = AuthenticationSchemes.AccessToken)]
     [SwaggerOperation(Summary = "Deletes file",
         Description = "Deletes file")]
     [ProducesResponseType(StatusCodes.Status200OK)]

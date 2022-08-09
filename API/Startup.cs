@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using API.AuthHandlers;
 using API.Extensions;
 using Common.Enums;
 using Common.Filters;
@@ -96,6 +97,16 @@ public class Startup
                 return new BadRequestObjectResult(errorModelResult);
             };
         });
+        
+        //Authentication
+        {
+            services.AddAuthentication()
+                .AddScheme<DefaultAuthenticationSchemeOptions, DefaultAuthenticationHandler>(
+                    AuthenticationSchemes.Default, null!);
+            services.AddAuthentication()
+                .AddScheme<AccessTokenAuthenticationSchemeOptions, AccessTokenAuthenticationHandler>(
+                    AuthenticationSchemes.AccessToken, null!);
+        }
 
         services.AddServices();
         services.AddHandlers();

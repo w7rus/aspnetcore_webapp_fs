@@ -36,6 +36,12 @@ public static class Localize
         public static string ObjectCastFailed => "ObjectCastFailed";
 
         #endregion
+
+        #region AccessToken
+
+        public static string AccessTokenNotProvided => "AccessTokenNotProvided";
+
+        #endregion
     }
 
     public static class Warning
