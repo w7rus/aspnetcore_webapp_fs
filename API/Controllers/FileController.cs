@@ -19,7 +19,6 @@ using AuthenticationSchemes = Common.Models.AuthenticationSchemes;
 
 namespace API.Controllers;
 
-[AllowAnonymous]
 [ApiController]
 [Route("[controller]")]
 [ProducesResponseType(typeof(ErrorModelResult), StatusCodes.Status401Unauthorized)]

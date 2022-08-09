@@ -37,6 +37,7 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddCustomOptions(Configuration);
+        services.AddCustomConfigureOptions();
 
         services.AddCors();
 
