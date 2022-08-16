@@ -106,8 +106,10 @@ public class FileService : IFileService
                     var newHeight = (int)Math.Round(bitmap.Height * scaleFactor);
 
                     var toBitmap = new SKBitmap(newWidth, newHeight, bitmap.ColorType, bitmap.AlphaType);
+                    toBitmap.Erase(SKColors.Transparent);
                     
                     var canvas = new SKCanvas(toBitmap);
+                    canvas.Clear(SKColors.Transparent);
                     canvas.SetMatrix(SKMatrix.CreateScale(scaleFactor, scaleFactor));
 
                     canvas.DrawBitmap(bitmap, 0, 0);
