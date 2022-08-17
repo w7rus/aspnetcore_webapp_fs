@@ -1,10 +1,8 @@
 ﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
-using System.Threading.Tasks;
 using Common.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
@@ -27,20 +25,21 @@ public class AccessTokenAuthenticationHandler : AuthenticationHandler<AccessToke
 
         if (executingEndpoint == null)
             return Task.FromResult(AuthenticateResult.Fail(new NullReferenceException(nameof(executingEndpoint))));
-        
+
         if (executingEndpoint.Metadata.OfType<AllowAnonymousAttribute>().Any()
             || executingEndpoint.Metadata.OfType<AllowAnonymousAttribute>().Any())
-            return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(), Scheme.Name)));
-        
+            return Task.FromResult(
+                AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(), Scheme.Name)));
+
         var authorizationBearerPayload =
             Context.Request.Headers[HeaderNames.Authorization].SingleOrDefault()?.Split(" ").Last();
-        
+
         if (string.IsNullOrEmpty(authorizationBearerPayload))
             Context.Request.Cookies.TryGetValue(CookieKey.AccessToken, out authorizationBearerPayload);
 
         if (string.IsNullOrEmpty(authorizationBearerPayload))
             return Task.FromResult(AuthenticateResult.Fail(Localize.Error.AccessTokenNotProvided));
-        
+
         if (authorizationBearerPayload != Options.AccessToken)
             return Task.FromResult(AuthenticateResult.Fail(new NullReferenceException(nameof(executingEndpoint))));
 

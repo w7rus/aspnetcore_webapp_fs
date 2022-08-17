@@ -11,6 +11,12 @@ public static class Localize
 
         #endregion
 
+        #region AccessToken
+
+        public static string AccessTokenNotProvided => "AccessTokenNotProvided";
+
+        #endregion
+
         #region File
 
         public const string FileCreateFailed = "FileCreateFailed";
@@ -34,12 +40,6 @@ public static class Localize
 
         public static string ObjectDeserializationFailed => "ObjectDeserializationFailed";
         public static string ObjectCastFailed => "ObjectCastFailed";
-
-        #endregion
-
-        #region AccessToken
-
-        public static string AccessTokenNotProvided => "AccessTokenNotProvided";
 
         #endregion
     }

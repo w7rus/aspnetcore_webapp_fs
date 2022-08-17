@@ -7,18 +7,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Folder Include="Enums" />
+        <Folder Include="Enums"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="JsonModelBinder" Version="2.1.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
-        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+        <PackageReference Include="JsonModelBinder" Version="2.1.1"/>
+        <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Abstractions" Version="2.2.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5"/>
+        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -26,7 +26,7 @@
             <HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\6.0.6\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.AspNetCore.Mvc.Core">
-          <HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\6.0.7\Microsoft.AspNetCore.Mvc.Core.dll</HintPath>
+            <HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\6.0.7\Microsoft.AspNetCore.Mvc.Core.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.Net.Http.Headers">
             <HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\6.0.6\Microsoft.Net.Http.Headers.dll</HintPath>

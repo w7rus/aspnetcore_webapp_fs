@@ -106,11 +106,12 @@ public static class Program
             .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
             .UseSerilog((context, services, configuration) =>
             {
-                var seqOptions = services.GetService<IOptions<SeqOptions>>()?.Value ?? throw new ApplicationException("Dependency IOptions<SeqOptions> not found!");
-                
+                var seqOptions = services.GetService<IOptions<SeqOptions>>()?.Value ??
+                                 throw new ApplicationException("Dependency IOptions<SeqOptions> not found!");
+
                 var seqUri = new UriBuilder(seqOptions.Endpoint.Scheme, seqOptions.Endpoint.Host,
                     seqOptions.Endpoint.Port, seqOptions.Endpoint.Path);
-                
+
                 configuration
                     .ReadFrom.Configuration(context.Configuration)
                     .ReadFrom.Services(services)

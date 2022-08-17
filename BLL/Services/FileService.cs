@@ -44,6 +44,96 @@ public class FileService : IFileService
 
     #region Methods
 
+    private static async Task FixImageOrientation(Stream fileStreamInOut, CancellationToken cancellationToken = default)
+    {
+        if (!fileStreamInOut.CanSeek)
+            throw new NotSupportedException();
+
+        using var skManagedStream = new SKManagedStream(fileStreamInOut);
+        using var skCodec = SKCodec.Create(skManagedStream);
+        using var skBitmap = SKBitmap.Decode(skCodec);
+        var skBitmapWidth = (float) skBitmap.Width;
+        var skBitmapHeight = (float) skBitmap.Height;
+        Action<SKCanvas> transform = _ => { };
+        switch (skCodec.EncodedOrigin)
+        {
+            case SKEncodedOrigin.TopLeft:
+                break;
+            case SKEncodedOrigin.TopRight:
+                // flip along the x-axis
+                transform = canvas => canvas.Scale(-1, 1, skBitmapWidth / 2, skBitmapHeight / 2);
+                break;
+            case SKEncodedOrigin.BottomRight:
+                transform = canvas => canvas.RotateDegrees(180, skBitmapWidth / 2, skBitmapHeight / 2);
+                break;
+            case SKEncodedOrigin.BottomLeft:
+                // flip along the y-axis
+                transform = canvas => canvas.Scale(1, -1, skBitmapWidth / 2, skBitmapHeight / 2);
+                break;
+            case SKEncodedOrigin.LeftTop:
+                skBitmapWidth = skBitmap.Height;
+                skBitmapHeight = skBitmap.Width;
+                transform = canvas =>
+                {
+                    // Rotate 90
+                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
+                    canvas.Scale(skBitmapHeight * 1.0f / skBitmapWidth, -skBitmapWidth * 1.0f / skBitmapHeight,
+                        skBitmapWidth / 2, skBitmapHeight / 2);
+                };
+                break;
+            case SKEncodedOrigin.RightTop:
+                skBitmapWidth = skBitmap.Height;
+                skBitmapHeight = skBitmap.Width;
+                transform = canvas =>
+                {
+                    // Rotate 90
+                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
+                    canvas.Scale(skBitmapHeight * 1.0f / skBitmapWidth, skBitmapWidth * 1.0f / skBitmapHeight,
+                        skBitmapWidth / 2, skBitmapHeight / 2);
+                };
+                break;
+            case SKEncodedOrigin.RightBottom:
+                skBitmapWidth = skBitmap.Height;
+                skBitmapHeight = skBitmap.Width;
+                transform = canvas =>
+                {
+                    // Rotate 90
+                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
+                    canvas.Scale(-skBitmapHeight * 1.0f / skBitmapWidth, skBitmapWidth * 1.0f / skBitmapHeight,
+                        skBitmapWidth / 2, skBitmapHeight / 2);
+                };
+                break;
+            case SKEncodedOrigin.LeftBottom:
+                skBitmapWidth = skBitmap.Height;
+                skBitmapHeight = skBitmap.Width;
+                transform = canvas =>
+                {
+                    // Rotate 90
+                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
+                    canvas.Scale(-skBitmapHeight * 1.0f / skBitmapWidth, -skBitmapWidth * 1.0f / skBitmapHeight,
+                        skBitmapWidth / 2, skBitmapHeight / 2);
+                };
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        var skImageInfo = new SKImageInfo((int) Math.Round(skBitmapWidth), (int) Math.Round(skBitmapHeight));
+        using var skSurface = SKSurface.Create(skImageInfo);
+        using var skPaint = new SKPaint();
+        skPaint.IsAntialias = true;
+        skPaint.FilterQuality = SKFilterQuality.High;
+        transform.Invoke(skSurface.Canvas);
+        skSurface.Canvas.DrawBitmap(skBitmap, skImageInfo.Rect, skPaint);
+        skSurface.Canvas.Flush();
+
+        using var skImage = skSurface.Snapshot();
+        var skData = skImage.Encode(skCodec.EncodedFormat, 100);
+        fileStreamInOut.SetLength(0);
+        skData.SaveTo(fileStreamInOut);
+        await fileStreamInOut.FlushAsync(cancellationToken);
+    }
+
     public async Task<(long size, string fileName, string fileNamePreview)> Save(
         string fileName,
         Stream stream,
@@ -53,7 +143,7 @@ public class FileService : IFileService
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
         var filePath = Path.Combine(dirPath, fileName);
         Directory.CreateDirectory(dirPath);
-        var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.ReadWrite);
         await stream.CopyToAsync(fileStream, cancellationToken);
         await fileStream.FlushAsync(cancellationToken);
         fileStream.Close();
@@ -62,14 +152,15 @@ public class FileService : IFileService
 
         var fectp = new FileExtensionContentTypeProvider();
 
-        if (_miscOptions.IsFilePreviewsEnabled)
-            try
+        if (_miscOptions.IsFilePreviewsEnabled && fectp.Mappings.ContainsKey(fileInfo.Extension))
+        {
+            if (fectp.Mappings[fileInfo.Extension].StartsWith("video/"))
             {
-                if (fectp.Mappings[fileInfo.Extension].StartsWith("video/"))
-                {
-                    var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
+                var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
 
-                    var ffmpeg = new Process()
+                try
+                {
+                    var ffmpeg = new Process
                     {
                         StartInfo = new ProcessStartInfo
                         {
@@ -88,177 +179,79 @@ public class FileService : IFileService
                         throw new CustomException($"Failed to start ffmpeg for file \"{filePath}\"!");
 
                     await ffmpeg.WaitForExitAsync(cancellationToken);
-                    
+
                     var fileInfoPreview = new FileInfo(filePathPreview);
-                    
+
                     return (fileInfo.Length, fileInfo.Name, fileInfoPreview.Name);
                 }
-
-                if (fectp.Mappings[fileInfo.Extension].StartsWith("image/"))
+                catch (Exception e)
                 {
-                    var rwfileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
-                    
-                    var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
+                    File.Delete(filePath);
+                    File.Delete(filePathPreview);
+                    throw new CustomException(
+                        $"Failed to generate preview for file \"{filePath}\" at \"{filePathPreview}\": Exception: {e}");
+                }
+            }
 
-                    {
-                        using var skManagedStream = new SKManagedStream(rwfileStream);
-                        using var skCodec = SKCodec.Create(skManagedStream);
-                        using var skBitmap = SKBitmap.Decode(skCodec);
-                        var skBitmapWidth = (float)skBitmap.Width;
-                        var skBitmapHeight = (float)skBitmap.Height;
-                        Action<SKCanvas> transform = _ => { };
-                        switch (skCodec.EncodedOrigin)
-                        {
-                            case SKEncodedOrigin.TopLeft:
-                                break;
-                            case SKEncodedOrigin.TopRight:
-                                // flip along the x-axis
-                                transform = canvas => canvas.Scale(-1, 1, skBitmapWidth / 2, skBitmapHeight / 2);
-                                break;
-                            case SKEncodedOrigin.BottomRight:
-                                transform = canvas => canvas.RotateDegrees(180, skBitmapWidth / 2, skBitmapHeight / 2);
-                                break;
-                            case SKEncodedOrigin.BottomLeft:
-                                // flip along the y-axis
-                                transform = canvas => canvas.Scale(1, -1, skBitmapWidth / 2, skBitmapHeight / 2);
-                                break;
-                            case SKEncodedOrigin.LeftTop:
-                                skBitmapWidth = skBitmap.Height;
-                                skBitmapHeight = skBitmap.Width;
-                                transform = canvas =>
-                                {
-                                    // Rotate 90
-                                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
-                                    canvas.Scale(skBitmapHeight * 1.0f / skBitmapWidth, -skBitmapWidth * 1.0f / skBitmapHeight, skBitmapWidth / 2, skBitmapHeight / 2);
-                                };
-                                break;
-                            case SKEncodedOrigin.RightTop:
-                                skBitmapWidth = skBitmap.Height;
-                                skBitmapHeight = skBitmap.Width;
-                                transform = canvas =>
-                                {
-                                    // Rotate 90
-                                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
-                                    canvas.Scale(skBitmapHeight * 1.0f / skBitmapWidth, skBitmapWidth * 1.0f / skBitmapHeight, skBitmapWidth / 2, skBitmapHeight / 2);
-                                };
-                                break;
-                            case SKEncodedOrigin.RightBottom:
-                                skBitmapWidth = skBitmap.Height;
-                                skBitmapHeight = skBitmap.Width;
-                                transform = canvas =>
-                                {
-                                    // Rotate 90
-                                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
-                                    canvas.Scale(-skBitmapHeight * 1.0f / skBitmapWidth, skBitmapWidth * 1.0f / skBitmapHeight, skBitmapWidth / 2, skBitmapHeight / 2);
-                                };
-                                break;
-                            case SKEncodedOrigin.LeftBottom:
-                                skBitmapWidth = skBitmap.Height;
-                                skBitmapHeight = skBitmap.Width;
-                                transform = canvas =>
-                                {
-                                    // Rotate 90
-                                    canvas.RotateDegrees(90, skBitmapWidth / 2, skBitmapHeight / 2);
-                                    canvas.Scale(-skBitmapHeight * 1.0f / skBitmapWidth, -skBitmapWidth * 1.0f / skBitmapHeight, skBitmapWidth / 2, skBitmapHeight / 2);
-                                };
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
+            if (fectp.Mappings[fileInfo.Extension].StartsWith("image/"))
+            {
+                var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + fileInfo.Extension);
 
-                        var info = new SKImageInfo((int)Math.Round(skBitmapWidth), (int)Math.Round(skBitmapHeight));
-                        using var skSurface = SKSurface.Create(info);
-                        using var skPaint = new SKPaint();
-                        skPaint.IsAntialias = true;
-                        skPaint.FilterQuality = SKFilterQuality.High;
-                        transform.Invoke(skSurface.Canvas);
-                        skSurface.Canvas.DrawBitmap(skBitmap, info.Rect, skPaint);
-                        skSurface.Canvas.Flush();
-                            
-                        using var skImage = skSurface.Snapshot();
-                        var skData = skImage.Encode(SKEncodedImageFormat.Jpeg, 100);
-                        rwfileStream.SetLength(0);
-                        await rwfileStream.FlushAsync(cancellationToken);
-                        skData.SaveTo(rwfileStream);
-                        await rwfileStream.FlushAsync(cancellationToken);
-                        rwfileStream.Seek(0, SeekOrigin.Begin);
-                    }
+                try
+                {
+                    fileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+                    await FixImageOrientation(fileStream, cancellationToken);
+                    fileStream.Seek(0, SeekOrigin.Begin);
 
-                    {
-                        using var skManagedStream = new SKManagedStream(rwfileStream);
-                        using var skCodec = SKCodec.Create(skManagedStream);
-                        using var skBitmap = SKBitmap.Decode(skCodec);
-                        var skBitmapWidth = (float)skBitmap.Width;
-                        var skBitmapHeight = (float)skBitmap.Height;
-                        
-                        var maxWidthHeight = Math.Max(skBitmapWidth, skBitmapHeight);
-                        var scaleFactor = _miscOptions.FilePreviewMaxLongEdgeLength / maxWidthHeight;
-                        var skBitmapWidthPreview = Math.Round(skBitmapWidth * scaleFactor);
-                        var skBitmapHeightPreview = Math.Round(skBitmapHeight * scaleFactor);
-                            
-                        var skBitmapPreview = new SKBitmap((int)skBitmapWidthPreview, (int)skBitmapHeightPreview);
-                        skBitmapPreview.Erase(SKColors.Transparent);
-                        skBitmap.ScalePixels(skBitmapPreview, SKFilterQuality.High);
+                    using var skManagedStream = new SKManagedStream(fileStream);
+                    using var skCodec = SKCodec.Create(skManagedStream);
+                    using var skBitmap = SKBitmap.Decode(skCodec);
+                    var skBitmapWidth = (float) skBitmap.Width;
+                    var skBitmapHeight = (float) skBitmap.Height;
 
-                        var infoPreview = new SKImageInfo((int)skBitmapWidthPreview, (int)skBitmapHeightPreview);
-                        using var skSurfacePreview = SKSurface.Create(infoPreview);
-                        using var skPaintPreview = new SKPaint();
-                        skPaintPreview.IsAntialias = true;
-                        skPaintPreview.FilterQuality = SKFilterQuality.High;
-                        skSurfacePreview.Canvas.DrawBitmap(skBitmapPreview, infoPreview.Rect, skPaintPreview);
-                        skSurfacePreview.Canvas.Flush();
-                            
-                        using var skImagePreview = skSurfacePreview.Snapshot();
-                        var skDataPreview = skImagePreview.Encode(SKEncodedImageFormat.Jpeg, 100);
-                        var fileStreamPreview = new FileStream(filePathPreview, FileMode.CreateNew, FileAccess.Write);
-                        skDataPreview.SaveTo(fileStreamPreview);
-                        await fileStreamPreview.FlushAsync(cancellationToken);
-                        fileStreamPreview.Close();
-                    }
-                    
-                    rwfileStream.Close();
+                    var maxWidthHeight = Math.Max(skBitmapWidth, skBitmapHeight);
+                    var scaleFactor = _miscOptions.FilePreviewMaxLongEdgeLength / maxWidthHeight;
+                    var skBitmapWidthPreview = Math.Round(skBitmapWidth * scaleFactor);
+                    var skBitmapHeightPreview = Math.Round(skBitmapHeight * scaleFactor);
 
-                    // var bitmap = SKBitmap.Decode(filePath);
-                    // var maxWidthHeight = Math.Max(bitmap.Width, bitmap.Height);
-                    //
-                    // var scaleFactor = _miscOptions.FilePreviewMaxLongEdgeLength / (float)maxWidthHeight;
-                    //
-                    // var newWidth = (int)Math.Round(bitmap.Width * scaleFactor);
-                    // var newHeight = (int)Math.Round(bitmap.Height * scaleFactor);
-                    //
-                    // var toBitmap = new SKBitmap(newWidth, newHeight, bitmap.ColorType, bitmap.AlphaType);
-                    // toBitmap.Erase(SKColors.Transparent);
-                    //
-                    // var canvas = new SKCanvas(toBitmap);
-                    // canvas.Clear(SKColors.Transparent);
-                    // canvas.SetMatrix(SKMatrix.CreateScale(scaleFactor, scaleFactor));
-                    //
-                    // canvas.DrawBitmap(bitmap, 0, 0);
-                    // canvas.ResetMatrix();
-                    // canvas.Flush();
-                    //
-                    // var image = SKImage.FromBitmap(toBitmap);
-                    // var data = image.Encode(SKEncodedImageFormat.Jpeg, 100);
-                    //
-                    // var filePathPreview = Path.Combine(dirPath, Guid.NewGuid() + ".jpg");
-                    // var fileStreamPreview = new FileStream(filePathPreview, FileMode.CreateNew, FileAccess.Write);
-                    // data.SaveTo(fileStreamPreview);
-                    // await fileStreamPreview.FlushAsync(cancellationToken);
-                    // fileStreamPreview.Close();
+                    var skBitmapPreview = new SKBitmap((int) skBitmapWidthPreview, (int) skBitmapHeightPreview);
+                    skBitmapPreview.Erase(SKColors.Transparent);
+                    skBitmap.ScalePixels(skBitmapPreview, SKFilterQuality.High);
+
+                    var infoPreview = new SKImageInfo((int) skBitmapWidthPreview, (int) skBitmapHeightPreview);
+                    using var skSurfacePreview = SKSurface.Create(infoPreview);
+                    using var skPaintPreview = new SKPaint();
+                    skPaintPreview.IsAntialias = true;
+                    skPaintPreview.FilterQuality = SKFilterQuality.High;
+                    skSurfacePreview.Canvas.DrawBitmap(skBitmapPreview, infoPreview.Rect, skPaintPreview);
+                    skSurfacePreview.Canvas.Flush();
+
+                    using var skImagePreview = skSurfacePreview.Snapshot();
+                    var skDataPreview = skImagePreview.Encode(SKEncodedImageFormat.Jpeg, 100);
+                    var fileStreamPreview = new FileStream(filePathPreview, FileMode.CreateNew, FileAccess.Write);
+                    skDataPreview.SaveTo(fileStreamPreview);
+                    await fileStreamPreview.FlushAsync(cancellationToken);
+                    fileStreamPreview.Close();
+                    fileStream.Close();
 
                     fileInfo = new FileInfo(filePath);
                     var fileInfoPreview = new FileInfo(filePathPreview);
 
                     return (fileInfo.Length, fileInfo.Name, fileInfoPreview.Name);
                 }
-                
-                _logger.LogInformation(Localize.Log.Method(_fullName, nameof(Save),
-                    $"Skipping to generate preview for file \"{filePath}\": File type not supported!"));
+                catch (Exception e)
+                {
+                    File.Delete(filePath);
+                    throw new CustomException(
+                        $"Failed to generate preview for file \"{filePath}\" at \"{filePathPreview}\": Exception: {e}");
+                }
             }
-            catch (Exception e)
-            {
-                throw new CustomException($"Failed to generate preview for file \"{filePath}\": Exception: {e}");
-            }
+        }
+        else
+        {
+            _logger.LogInformation(Localize.Log.Method(_fullName, nameof(Save),
+                $"Skipping to generate preview for file \"{filePath}\": Previews generation is disabled or file type not supported!"));
+        }
 
         return (fileInfo.Length, fileInfo.Name, null);
     }

@@ -68,11 +68,11 @@ public class Startup
         });
 
         services.AddHttpContextAccessor();
-        
+
         var miscOptions = Configuration
             .GetSection(nameof(MiscOptions))
             .Get<MiscOptions>();
-        
+
         services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
@@ -98,7 +98,7 @@ public class Startup
                 return new BadRequestObjectResult(errorModelResult);
             };
         });
-        
+
         //Authentication
         {
             services.AddAuthentication()

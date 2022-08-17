@@ -1,12 +1,6 @@
-﻿using System.Security.Claims;
-using System.Text.Encodings.Web;
-using System.Threading.Tasks;
-using Common.Models;
+﻿using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
 
 namespace API.AuthHandlers;
 

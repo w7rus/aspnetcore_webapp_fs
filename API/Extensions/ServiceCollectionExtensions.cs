@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
 
         return serviceCollection;
     }
-    
+
     public static IServiceCollection AddCustomConfigureOptions(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddSingleton<IConfigureOptions<AuthenticationOptions>, ConfigureAuthenticationOptions>();
