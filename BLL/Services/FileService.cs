@@ -141,7 +141,7 @@ public class FileService : IFileService
     )
     {
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
-        var filePath = Path.Combine(dirPath, fileName);
+        var filePath = Path.Combine(dirPath, Path.GetFileName(fileName));
         Directory.CreateDirectory(dirPath);
         var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.ReadWrite);
         await stream.CopyToAsync(fileStream, cancellationToken);
@@ -261,7 +261,7 @@ public class FileService : IFileService
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Read)));
 
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
-        var filePath = Path.Combine(dirPath, fileName);
+        var filePath = Path.Combine(dirPath, Path.GetFileName(fileName));
         Directory.CreateDirectory(dirPath);
         var fileStream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
@@ -275,7 +275,7 @@ public class FileService : IFileService
         _logger.Log(LogLevel.Information, Localize.Log.MethodStart(_fullName, nameof(Delete)));
 
         var dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _miscOptions.ContentPath);
-        var filePath = Path.Combine(dirPath, fileName);
+        var filePath = Path.Combine(dirPath, Path.GetFileName(fileName));
         Directory.CreateDirectory(dirPath);
         File.Delete(filePath);
 
