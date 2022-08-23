@@ -77,7 +77,7 @@ public class Startup
         {
             options.AddDefaultPolicy(policy =>
             {
-                policy.WithOrigins(miscOptions.CorsAllowedOrigins).AllowAnyMethod();
+                policy.WithOrigins(miscOptions.CorsAllowedOrigins).AllowAnyMethod().AllowAnyHeader();
             });
         });
 
